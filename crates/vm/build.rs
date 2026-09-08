@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::{env, io::prelude::*, path::PathBuf, process::Command};
 
 fn main() {
@@ -30,12 +29,12 @@ fn main() {
     let mut env_path = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     env_path.push("env_vars.rs");
     let mut f = std::fs::File::create(env_path).unwrap();
-    write!(
-        f,
-        "sysvars! {{ {} }}",
-        std::env::vars_os().format_with(", ", |(k, v), f| f(&format_args!("{k:?} => {v:?}")))
-    )
-    .unwrap();
+    // Upstream writes the whole build-time environment into this table, which
+    // lands in .rodata as adjacent Rust string constants. conda's binary
+    // relocation then null-pads over the ones that follow a build path,
+    // clobbering `metaclass` and `type_params` and breaking every `class X(
+    // metaclass=Y)`. Deletable once rustpython gates this behind a feature.
+    write!(f, "sysvars! {{ }}").unwrap();
 }
 
 fn git_hash() -> String {
